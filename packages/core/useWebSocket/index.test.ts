@@ -1,6 +1,7 @@
+import type { UseWebSocketReturn } from '.'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { useWebSocket, type UseWebSocketReturn } from '.'
+import { useWebSocket } from '.'
 import { useSetup } from '../../.test'
 
 describe('useWebSocket', () => {
@@ -60,6 +61,27 @@ describe('useWebSocket', () => {
     expect(mockWebSocket.prototype.close).toBeCalledWith(1000, undefined)
     expect(mockWebSocket).toBeCalledWith('ws://127.0.0.1', [])
     expect(vm.ref.status.value).toBe('CONNECTING')
+  })
+
+  it('should not reconnect on URL change if immediate and autoConnect are false', async () => {
+    const url = ref('ws://localhost')
+    vm = useSetup(() => {
+      const ref = useWebSocket(url, {
+        immediate: false,
+        autoConnect: false,
+      })
+
+      return {
+        ref,
+      }
+    })
+
+    url.value = 'ws://127.0.0.1'
+    await nextTick()
+
+    expect(mockWebSocket.prototype.close).not.toHaveBeenCalled()
+    expect(mockWebSocket).not.toHaveBeenCalledWith('ws://127.0.0.1', [])
+    expect(vm.ref.status.value).toBe('CLOSED')
   })
 
   it('should remain closed if immediate is false', () => {
